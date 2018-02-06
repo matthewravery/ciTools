@@ -6,6 +6,7 @@
 - Implement a parametric method for GLM prediction intervals.
 - reorder columns of new data if they are not already in the right order
 - Develop set of test functions (testthat plus test folder)
+- Support for quantile regression
 * Long Term
 - Add survival models method that can handle censored data
 - Add GLMMs method
