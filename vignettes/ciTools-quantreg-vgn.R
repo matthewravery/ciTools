@@ -43,8 +43,71 @@ lmfit <- lm(y ~ ., data = tb)
 rqfit <- rq(y ~ ., data = tb, tau = tquant)
 
 lmq <- fullspace %>% 
-  add_quantile(lmfit, p = tquant)
+  add_quantile(lmfit, p = tquant) %>% 
+  add_predictions(rqfit, var = "rq_pred") 
 
-lmq
 
+generate_preds <- function(tb, fullspace, tbquant){
+  
+  lmfit <- lm(y ~ ., data = tb)
+  rqfit <- rq(y ~ ., data = tb, tau = tquant)
+  
+  fullspace %>% 
+    add_quantile(lmfit, p = tquant) %>% 
+    add_predictions(rqfit, var = "rq_pred") 
+
+}
+
+nsim = 10
+out <- NULL
+for(sim in 1:nsim){
+  
+  out <- gen_data_set() %>% 
+    generate_preds(fullspace, tbquant = .7) %>% 
+    mutate(sim_number = sim) %>% 
+    bind_rows(out)
+  
+}
+
+out %>% 
+  mutate(bias_rq = q7 - pred,
+         bias_cit = q7 - quantile0.7,
+         coverage_rq = pnorm(pred, x1 + (x2 == "b"), sd = 1),
+         coverage_cit = pnorm(quantile0.7, x1 + (x2 == "b"), sd = 1)) %>% 
+  group_by(sim_number) %>% 
+  summarise(`Avg. Bias RQ` = mean(bias_rq),
+            `Avg. Bias ciTools` = mean(bias_cit),
+            `Avg. coverage RQ` = mean(coverage_rq),
+            `Avg. coverage ciTools` = mean(coverage_cit)) 
+
+
+#Bias measures how different, on average, our estimated quantile is from the true value
+calculate_bias <- function(qhat, trueq){
+  
+  mean(qhat - trueq)
+  
+}
+
+
+
+#MSE is a composite measure of bias and variance for an estimator
+calculate_mse <- function(qhat, xmat, beta, tau){
+  
+  mean((qhat - qnorm(tau, xmat %*% beta, sd = 1))^2)
+  
+}
+
+#Coverage is a measure of the actual probability covered by a quantile. Ideally, this should be equal to tau.
+calculate_coverage <- function(qhat, xmat, beta){
+  
+  pnorm(qhat, xmat %*% beta, sd = 1)
+  
+}
+
+  
 #Next step is to compare the estimated quantile to the real one
+
+  
+  
+  
+  
