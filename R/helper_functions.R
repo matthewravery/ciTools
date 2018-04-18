@@ -30,8 +30,11 @@ get_x_matrix_mermod <- function(tb, fit){
         if(is.factor(mm[[i]])) mm[[i]] <- as.character(mm[[i]])
     }
 
-    suppressWarnings(model.matrix(reformulate(attributes(terms(fit))$term.labels), 
+    X <- suppressWarnings(model.matrix(reformulate(attributes(terms(fit))$term.labels), 
                                   dplyr::bind_rows(mm, tb))[-(1:nrow(fit@frame)), ])
+    
+    #remove columns from X that weren't used in the model fit
+    X[, colnames(X)[colnames(X) %in% colnames(model.matrix(fit))]]
 }
 
 
