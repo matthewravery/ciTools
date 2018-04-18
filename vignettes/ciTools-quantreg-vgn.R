@@ -1,6 +1,8 @@
 library(quantreg)
 library(ciTools)
 library(tidyverse)
+library(modelr)
+
 cars
 
 lmfit <- lm(dist ~ speed, data = cars)
@@ -37,7 +39,8 @@ fullspace <- expand.grid(x1 = seq(0, 1, length.out = 21),
                          x2 = letters[1:2]) %>% 
   mutate(q7 = x1 + (x2 == "b") + qnorm(tquant))
 
-tb <- gen_data_set()
+b = c(1, 1)
+tb <- gen_data_set(beta = b)
 
 lmfit <- lm(y ~ ., data = tb)
 rqfit <- rq(y ~ ., data = tb, tau = tquant)
@@ -58,7 +61,7 @@ generate_preds <- function(tb, fullspace, tbquant){
 
 }
 
-nsim = 10
+nsim = 1000
 out <- NULL
 for(sim in 1:nsim){
   
@@ -78,36 +81,42 @@ out %>%
   summarise(`Avg. Bias RQ` = mean(bias_rq),
             `Avg. Bias ciTools` = mean(bias_cit),
             `Avg. coverage RQ` = mean(coverage_rq),
-            `Avg. coverage ciTools` = mean(coverage_cit)) 
-
-
-#Bias measures how different, on average, our estimated quantile is from the true value
-calculate_bias <- function(qhat, trueq){
-  
-  mean(qhat - trueq)
-  
-}
-
-
-
-#MSE is a composite measure of bias and variance for an estimator
-calculate_mse <- function(qhat, xmat, beta, tau){
-  
-  mean((qhat - qnorm(tau, xmat %*% beta, sd = 1))^2)
-  
-}
-
-#Coverage is a measure of the actual probability covered by a quantile. Ideally, this should be equal to tau.
-calculate_coverage <- function(qhat, xmat, beta){
-  
-  pnorm(qhat, xmat %*% beta, sd = 1)
-  
-}
-
-  
-#Next step is to compare the estimated quantile to the real one
-
-  
-  
-  
-  
+            `Avg. coverage ciTools` = mean(coverage_cit)) %>% 
+  gather(`Avg. Bias RQ`, `Avg. Bias ciTools`, 
+         `Avg. coverage RQ`, `Avg. coverage ciTools`, 
+         key = "summary", value = "value") %>%  
+  group_by(summary) %>% 
+  summarise(mean(value))
+# 
+# 
+# #Bias measures how different, on average, our estimated quantile is from the true value
+# calculate_bias <- function(qhat, trueq){
+#   
+#   mean(qhat - trueq)
+#   
+# }
+# 
+# 
+# 
+# #MSE is a composite measure of bias and variance for an estimator
+# calculate_mse <- function(qhat, xmat, beta, tau){
+#   
+#   mean((qhat - qnorm(tau, xmat %*% beta, sd = 1))^2)
+#   
+# }
+# 
+# #Coverage is a measure of the actual probability covered by a quantile. Ideally, this should be equal to tau.
+# calculate_coverage <- function(qhat, xmat, beta){
+#   
+#   pnorm(qhat, xmat %*% beta, sd = 1)
+#   
+# }
+# 
+# out %>% 
+#   group_by(sim_number) %>% 
+#   summarise(`Avg. Bias RQ` = calculate_bias(rq_pred, q7),
+#             `Avg. Bias RQ` = calculate_bias(quantile0.7, q7),
+#             `Avg. coverage RQ` = calculate_coverage(rq_pred, model.matrix(lmfit), b),
+#             `Avg. coverage ciTools` = calculate_coverage(quantile0.7, model.matrix(lmfit), b)) 
+# 
+# #Next step is to compare the estimated quantile to the real one
